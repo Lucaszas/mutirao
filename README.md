@@ -9,6 +9,8 @@ grandes empresas.
 
 > Software livre (AGPL-3.0), gratuito, sem anúncios e sem venda de dados. Feito em mutirão.
 
+**No ar:** <https://mutirao-tau.vercel.app> (versão de testes)
+
 ## O que já funciona (MVP)
 
 | Módulo | O que faz |
