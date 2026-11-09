@@ -1,7 +1,7 @@
 import { WEIGHTS } from "@/guardiao/saude";
 import { PageTitle } from "@/components/ui";
 
-const REPO = "https://github.com/SEU-USUARIO/mutirao/tree/main/src/guardiao";
+const REPO = "https://github.com/Lucaszas/mutirao/tree/main/src/guardiao";
 
 export default function Guardiao() {
   return (
