@@ -22,6 +22,16 @@ Caminho recomendado para começar: **GitHub (código) + Turso (banco) + Vercel (
    ```
    Se quiser os dados de exemplo, rode também `npm run db:seed` com as mesmas variáveis.
 
+## Mudar a estrutura do banco online (cuidado!)
+
+Em 10/11/2026 um `drizzle-kit push --force` no banco do Turso recriou a tabela de usuários e **apagou a conta que já
+existia**. Para não repetir:
+
+1. **Faça uma cópia antes:** no painel do Turso, *Export Database → Download SQLite File*.
+2. **Nunca use `--force` em produção.** Rode `npm run db:push` sem ele e leia o que vai acontecer: se aparecer
+   recriação de tabela (`__new_...`) ou perda de dados, pare.
+3. Prefira migrações versionadas (`npx drizzle-kit generate` e revisar o SQL) quando houver usuários de verdade.
+
 ## 3. Site na Vercel
 
 1. Crie uma conta em <https://vercel.com> usando o GitHub.

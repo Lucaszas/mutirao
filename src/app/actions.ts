@@ -2,9 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { COOP_TYPES, OFFER_KINDS } from "@/db/schema";
+import { COOP_TYPES, OFFER_KINDS, POST_KINDS, POST_STATUS } from "@/db/schema";
 import { createSession, destroySession, hashPassword, requireUser, verifyPassword } from "@/lib/auth";
 import { brl, slugify, str, toCents } from "@/lib/format";
 import { appendLedger } from "@/lib/ledger-db";
@@ -513,4 +513,85 @@ export async function cancelarPedido(form: FormData) {
   const allowed: schema.OrderStatus[] = isSeller ? ["aguardando_pagamento", "pagamento_informado", "em_disputa"] : order.buyerId === user.id ? ["aguardando_pagamento"] : [];
   if (!(await setOrderStatus(order.id, allowed, "cancelado"))) fail(path, "Este pedido não pode ser cancelado agora.");
   revalidatePath(path);
+}
+
+// ---------- Mural (ideias, problemas, design) ----------
+// Qualquer pessoa com conta pode publicar, comentar e apoiar. Só membros mudam o andamento.
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+async function postById(id: number) {
+  const post = await db.select().from(schema.posts).where(eq(schema.posts.id, id)).get();
+  if (!post) redirect("/cooperativas");
+  return post!;
+}
+
+/** Freio contra spam: no máximo `max` registros da pessoa nas últimas 24h. */
+async function underDailyLimit(table: typeof schema.posts | typeof schema.postComments, userId: number, max: number) {
+  const since = Date.now() - DAY_MS;
+  const rows = await db
+    .select({ id: table.id })
+    .from(table)
+    .where(and(eq(table.authorId, userId), gte(table.createdAt, since)));
+  return rows.length < max;
+}
+
+export async function publicarNoMural(form: FormData) {
+  const user = await requireUser();
+  const coop = await coopById(Number(form.get("coopId")));
+  const path = `/cooperativas/${coop.slug}/mural`;
+  const kind = str(form, "kind") as schema.PostKind;
+  const title = str(form, "title", 140);
+  const body = str(form, "body", 4000);
+  if (!(kind in POST_KINDS)) fail(path, "Escolha o tipo: ideia, problema, design ou conversa.");
+  if (!title || !body) fail(path, "Escreva um título e conte um pouco mais.");
+  if (!(await underDailyLimit(schema.posts, user.id, 15))) fail(path, "Limite de 15 publicações por dia. Volte amanhã!");
+  const [post] = await db
+    .insert(schema.posts)
+    .values({ coopId: coop.id, authorId: user.id, kind, title, body, page: str(form, "page", 120) })
+    .returning();
+  // quem publica já apoia a própria ideia
+  await db.insert(schema.postSupports).values({ postId: post.id, userId: user.id }).onConflictDoNothing();
+  redirect(`${path}/${post.id}`);
+}
+
+export async function comentarNoMural(form: FormData) {
+  const user = await requireUser();
+  const post = await postById(Number(form.get("postId")));
+  const coop = await coopById(post.coopId);
+  const path = `/cooperativas/${coop.slug}/mural/${post.id}`;
+  const body = str(form, "body", 2000);
+  if (!body) fail(path, "O comentário está vazio.");
+  if (!(await underDailyLimit(schema.postComments, user.id, 60))) fail(path, "Limite de 60 comentários por dia.");
+  await db.insert(schema.postComments).values({ postId: post.id, authorId: user.id, body });
+  revalidatePath(path);
+}
+
+export async function apoiarPost(form: FormData) {
+  const user = await requireUser();
+  const post = await postById(Number(form.get("postId")));
+  const coop = await coopById(post.coopId);
+  const where = and(eq(schema.postSupports.postId, post.id), eq(schema.postSupports.userId, user.id));
+  const existing = await db.select().from(schema.postSupports).where(where).get();
+  if (existing) await db.delete(schema.postSupports).where(where);
+  else await db.insert(schema.postSupports).values({ postId: post.id, userId: user.id }).onConflictDoNothing();
+  revalidatePath(`/cooperativas/${coop.slug}/mural`, "layout");
+}
+
+export async function mudarStatusPost(form: FormData) {
+  const user = await requireUser();
+  const post = await postById(Number(form.get("postId")));
+  const coop = await coopById(post.coopId);
+  const path = `/cooperativas/${coop.slug}/mural/${post.id}`;
+  if (!(await requireMember(coop.id, user.id))) fail(path, "Só membros da cooperativa mudam o andamento.");
+  const status = str(form, "status") as schema.PostStatus;
+  if (!(status in POST_STATUS)) fail(path, "Andamento inválido.");
+  const note = str(form, "statusNote", 500);
+  await db.update(schema.posts).set({ status, statusNote: note }).where(eq(schema.posts.id, post.id));
+  await db.insert(schema.postComments).values({
+    postId: post.id,
+    authorId: user.id,
+    body: `↪ mudou o andamento para "${POST_STATUS[status]}"${note ? `: ${note}` : ""}`,
+  });
+  revalidatePath(`/cooperativas/${coop.slug}/mural`, "layout");
 }

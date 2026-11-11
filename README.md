@@ -24,6 +24,7 @@ grandes empresas.
 | **Meu bairro** | Pessoas, cooperativas e ofertas por proximidade (mesmo bairro → até 3 km → cidade). Pedidos urgentes 🆘 no topo. Localização aproximada (~1 km), nunca exata |
 | **Pedidos com Pix direto** | Compra com QR Pix que vai direto para a conta da cooperativa. Confirmação dupla, disputa e reputação. A plataforma nunca guarda dinheiro |
 | **Antigolpe** | Dupla aprovação para trocar a chave Pix e para despesas grandes. Livro-caixa encadeado por hash (adulteração detectada). Estorno em vez de apagar |
+| **Mural de ideias** | Em cada cooperativa, qualquer pessoa publica ideias, problemas e sugestões de design, comenta e apoia (▲). Membros cuidam do andamento. O mural da cooperativa **Mutirão** (a própria plataforma) é o canal de melhoria do site: [/melhorar](https://mutirao-tau.vercel.app/melhorar) |
 | **Exportar dados** | Qualquer membro baixa tudo da cooperativa em JSON |
 | **Guardião** | A "IA" interna: heurísticas abertas e explicáveis (veja abaixo) |
 
@@ -49,7 +50,8 @@ npm run setup   # cria o banco local (SQLite) e popula com dados de exemplo
 npm run dev     # abre em http://localhost:3000
 ```
 
-Contas de exemplo: `ana@exemplo.org`, `bruno@exemplo.org`, `carla@exemplo.org`, todas com a senha `mutirao123`.
+Contas de exemplo: `ana@exemplo.org`, `bruno@exemplo.org`, `carla@exemplo.org` e outras, todas com a senha `mutirao123`.
+Tudo o que vem do seed é marcado como **exemplo** no site. Num banco online, defina `DEMO_PASSWORD` (e `HOUSE_OWNER_EMAIL` para fundar a cooperativa da casa).
 
 ## Stack
 

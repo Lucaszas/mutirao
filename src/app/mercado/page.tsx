@@ -2,7 +2,7 @@ import Link from "next/link";
 import { listOffers } from "@/lib/queries";
 import { OFFER_KINDS } from "@/db/schema";
 import { brl, dateBR } from "@/lib/format";
-import { FilterTabs, PageTitle } from "@/components/ui";
+import { FilterTabs, PageTitle, DemoTag } from "@/components/ui";
 
 export default async function Mercado({ searchParams }: PageProps<"/mercado">) {
   const { tipo } = await searchParams;
@@ -23,7 +23,7 @@ export default async function Mercado({ searchParams }: PageProps<"/mercado">) {
               <span className={`chip ${offer.kind === "ajuda" ? "!bg-sun/20 !text-ink" : ""}`}>{OFFER_KINDS[offer.kind]}</span>
               {offer.priceCents != null && <span className="font-semibold text-leaf">{brl(offer.priceCents)}</span>}
             </div>
-            <p className="font-semibold">{offer.title}</p>
+            <p className="font-semibold">{offer.title}<DemoTag on={offer.demo} /></p>
             <p className="line-clamp-2 text-sm text-muted">{offer.description}</p>
             <p className="mt-1 text-xs text-muted">
               {coopName ? `🏠 ${coopName}` : userName}

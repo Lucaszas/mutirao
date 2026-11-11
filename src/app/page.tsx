@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DemoTag } from "@/components/ui";
 import { listCoops, listOffers } from "@/lib/queries";
 import { COOP_TYPES, OFFER_KINDS } from "@/db/schema";
 import { brl } from "@/lib/format";
@@ -52,7 +53,7 @@ export default async function Home() {
             {coops.slice(0, 6).map(({ coop, members }) => (
               <Link key={coop.id} href={`/cooperativas/${coop.slug}`} className="card transition hover:border-brand">
                 <span className="chip">{COOP_TYPES[coop.type]}</span>
-                <p className="h-display mt-2 text-lg">{coop.name}</p>
+                <p className="h-display mt-2 text-lg">{coop.name}<DemoTag on={coop.demo} /></p>
                 <p className="mt-1 line-clamp-2 text-sm text-muted">{coop.description}</p>
                 <p className="mt-3 text-xs text-muted">{members} membro(s){coop.city && ` · ${coop.city}`}</p>
               </Link>
@@ -71,7 +72,7 @@ export default async function Home() {
             <Link key={offer.id} href={`/mercado/${offer.id}`} className="card flex items-start justify-between gap-3 hover:border-brand">
               <div>
                 <span className="chip">{OFFER_KINDS[offer.kind]}</span>
-                <p className="mt-2 font-semibold">{offer.title}</p>
+                <p className="mt-2 font-semibold">{offer.title}<DemoTag on={offer.demo} /></p>
                 <p className="text-xs text-muted">{coopName ?? userName}{offer.city && ` · ${offer.city}`}</p>
               </div>
               {offer.priceCents != null && <span className="font-semibold text-leaf">{brl(offer.priceCents)}</span>}

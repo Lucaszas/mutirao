@@ -4,7 +4,7 @@ import { neighborhood } from "@/lib/queries";
 import { COOP_TYPES, OFFER_KINDS } from "@/db/schema";
 import { brl } from "@/lib/format";
 import { formatDistance } from "@/lib/geo";
-import { PageTitle } from "@/components/ui";
+import { PageTitle, DemoTag } from "@/components/ui";
 
 const LEVEL_LABEL = { bairro: "no bairro", perto: "pertinho", cidade: "na cidade", longe: "" } as const;
 
@@ -50,7 +50,7 @@ export default async function Bairro() {
           <ul className="mt-3 space-y-2">
             {urgent.map(({ offer, userName, near }) => (
               <li key={offer.id} className="flex flex-wrap items-center gap-2">
-                <Link href={`/mercado/${offer.id}`} className="font-semibold text-brand">{offer.title}</Link>
+                <Link href={`/mercado/${offer.id}`} className="font-semibold text-brand">{offer.title}</Link><DemoTag on={offer.demo} />
                 <span className="text-sm text-muted">— {userName}</span>
                 <Near {...near} />
               </li>
@@ -73,7 +73,7 @@ export default async function Bairro() {
                   <span className="chip">{COOP_TYPES[coop.type]}</span>
                   <Near {...near} />
                 </div>
-                <p className="h-display mt-2 text-lg">{coop.name}</p>
+                <p className="h-display mt-2 text-lg">{coop.name}<DemoTag on={coop.demo} /></p>
                 <p className="text-xs text-muted">{members} membro(s){coop.bairro && ` · ${coop.bairro}`}</p>
               </Link>
             ))}
@@ -91,7 +91,7 @@ export default async function Bairro() {
                   <span className="chip">{OFFER_KINDS[offer.kind]}</span>
                   <Near {...near} />
                 </div>
-                <p className="mt-2 font-semibold">{offer.title}</p>
+                <p className="mt-2 font-semibold">{offer.title}<DemoTag on={offer.demo} /></p>
                 <p className="text-xs text-muted">{coopName ?? userName}</p>
               </div>
               {offer.priceCents != null && <span className="font-semibold text-leaf">{brl(offer.priceCents)}</span>}
@@ -108,7 +108,7 @@ export default async function Bairro() {
           {people.slice(0, 30).map((p) => (
             <Link key={p.id} href={`/pessoas/${p.id}`} className="card hover:border-brand">
               <div className="flex items-center justify-between gap-2">
-                <p className="font-semibold">{p.name}</p>
+                <p className="font-semibold">{p.name}<DemoTag on={p.demo} /></p>
                 <Near {...p.near} />
               </div>
               {p.skills && <p className="mt-1 line-clamp-2 text-xs text-muted">{p.skills}</p>}

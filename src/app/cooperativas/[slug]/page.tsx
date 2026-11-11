@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getCoopDetail } from "@/lib/queries";
-import { COOP_TYPES, OFFER_KINDS } from "@/db/schema";
+import { getCoopDetail, listPosts } from "@/lib/queries";
+import { COOP_TYPES, OFFER_KINDS, POST_KINDS } from "@/db/schema";
 import { brl, dateBR } from "@/lib/format";
-import { Bar, ErrorBanner, HealthMeter } from "@/components/ui";
+import { Bar, ErrorBanner, HealthMeter, DemoTag } from "@/components/ui";
 import { CoopSecurity } from "@/components/CoopSecurity";
 import { criarProposta, entrarNaCoop, estornarLancamento, lancarCaixa, registrarHoras, sairDaCoop, votar } from "../../actions";
 
@@ -16,6 +16,7 @@ export default async function CoopPage({ params, searchParams }: PageProps<"/coo
   if (!data) notFound();
   const { coop, members, entries, reversed, logs, proposals, offers, isMember, totals, guardiao } = data;
   const { health, surplus, facilitators } = guardiao;
+  const topPosts = await listPosts(coop.id, { viewerId: user?.id, limit: 3 });
   const memberOnly = (node: React.ReactNode) =>
     isMember ? node : <p className="text-sm text-muted">Entre na cooperativa para participar.</p>;
 
@@ -26,7 +27,7 @@ export default async function CoopPage({ params, searchParams }: PageProps<"/coo
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div className="max-w-2xl">
           <span className="chip">{COOP_TYPES[coop.type]}</span>
-          <h1 className="h-display mt-2 text-4xl">{coop.name}</h1>
+          <h1 className="h-display mt-2 text-4xl">{coop.name}<DemoTag on={coop.demo} /></h1>
           <p className="mt-1 text-sm text-muted">
             {[coop.bairro, coop.city].filter(Boolean).join(", ")}
             {coop.city && " · "}desde {dateBR(coop.createdAt)} · {members.length} membro(s) · cota de entrada{" "}
@@ -53,6 +54,31 @@ export default async function CoopPage({ params, searchParams }: PageProps<"/coo
           )}
         </div>
       </header>
+
+      {/* ---------------- Mural ---------------- */}
+      <section className="card">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="h-display text-2xl">Mural de ideias</h2>
+          <Link href={`/cooperativas/${coop.slug}/mural`} className="text-sm text-brand underline">
+            {topPosts.length ? "ver tudo e publicar" : "publicar a primeira ideia"}
+          </Link>
+        </div>
+        {topPosts.length === 0 ? (
+          <p className="text-sm text-muted">Ideias, problemas e sugestões de qualquer pessoa da rede aparecem aqui.</p>
+        ) : (
+          <ul className="divide-y divide-line text-sm">
+            {topPosts.map((p) => (
+              <li key={p.post.id} className="flex items-center gap-3 py-2">
+                <span className="w-10 shrink-0 text-center font-semibold text-brand">▲ {p.supports}</span>
+                <Link href={`/cooperativas/${coop.slug}/mural/${p.post.id}`} className="flex-1 hover:text-brand">
+                  {POST_KINDS[p.post.kind].split(" ")[0]} {p.post.title}
+                </Link>
+                <span className="text-xs text-muted">💬 {p.comments}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* ---------------- Guardião ---------------- */}
       <section className="card border-leaf/40">

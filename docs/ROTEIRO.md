@@ -14,6 +14,11 @@ pedidos de ajuda e o Guardião (saúde, conexões, rodízio).
 - [x] Alertas de segurança do Guardião
 - [x] Exportação completa dos dados da cooperativa
 
+## Fase 1.6: testes com amigos ✅
+- [x] Mural de ideias por cooperativa (ideias, problemas, design, apoio e andamento)
+- [x] Cooperativa da casa (Mutirão) e atalho /melhorar
+- [x] Dados de exemplo marcados com selo e Pix desligado nas cooperativas de exemplo
+
 ## Fase 2: abrir ao público
 - [ ] Recuperação de senha e verificação de e-mail
 - [ ] Mensagens diretas entre pessoas e cooperativas

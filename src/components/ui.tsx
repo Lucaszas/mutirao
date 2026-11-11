@@ -72,3 +72,16 @@ export function Bar({ value }: { value: number }) {
     </div>
   );
 }
+
+/** Selo discreto para dados fictícios (placeholders da versão de testes). */
+export function DemoTag({ on }: { on?: boolean | null }) {
+  if (!on) return null;
+  return (
+    <span
+      title="Dado fictício, só para mostrar como a rede funciona"
+      className="ml-2 inline-block rounded-full border border-dashed border-muted/60 px-2 py-0.5 align-middle font-sans text-[10px] font-medium uppercase tracking-wide text-muted"
+    >
+      exemplo
+    </span>
+  );
+}

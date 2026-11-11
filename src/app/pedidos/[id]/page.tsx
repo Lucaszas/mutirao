@@ -18,7 +18,7 @@ export default async function PedidoPage({ params, searchParams }: PageProps<"/p
   const { erro } = await searchParams;
   const data = await getOrder(Number(id));
   if (!data) notFound();
-  const { order, offerTitle, coopName, coopSlug, coopCity, buyer } = data;
+  const { order, offerTitle, coopName, coopSlug, coopCity, coopDemo, buyer } = data;
   const isBuyer = order.buyerId === user.id;
   const isSeller = await isCoopMember(order.coopId, user.id);
   if (!isBuyer && !isSeller) notFound(); // pedidos só são visíveis para as partes
@@ -56,8 +56,14 @@ export default async function PedidoPage({ params, searchParams }: PageProps<"/p
 
       {isBuyer && S === "aguardando_pagamento" && (
         <section className="card grid gap-6 sm:grid-cols-[240px_1fr]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qr} alt="QR Code Pix" width={240} height={240} className="rounded-xl bg-white" />
+          {coopDemo ? (
+            <div className="grid size-[240px] place-items-center rounded-xl border border-dashed border-muted/60 p-6 text-center text-sm text-muted">
+              🧪 Cooperativa de exemplo: o QR Pix fica desligado.
+            </div>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={qr} alt="QR Code Pix" width={240} height={240} className="rounded-xl bg-white" />
+          )}
           <div className="space-y-3">
             <h2 className="h-display text-xl">Pague com Pix</h2>
             <p className="text-sm">
@@ -68,7 +74,13 @@ export default async function PedidoPage({ params, searchParams }: PageProps<"/p
               <br />
               Chave: <span className="font-mono">{order.pixKey}</span>
             </p>
-            <CopyButton text={payload} label="Copiar Pix Copia e Cola" />
+            {coopDemo ? (
+              <p className="rounded-lg border border-dashed border-muted/60 px-3 py-2 text-sm">
+                Isto é só um teste: <b>não faça nenhum Pix</b>. Clique em “Já paguei” para simular o resto do caminho.
+              </p>
+            ) : (
+              <CopyButton text={payload} label="Copiar Pix Copia e Cola" />
+            )}
             <form action={informarPagamento}>
               <input type="hidden" name="orderId" value={order.id} />
               <button className="btn w-full">Já paguei</button>

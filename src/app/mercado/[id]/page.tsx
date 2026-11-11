@@ -7,7 +7,7 @@ import { coopReputation, getOffer, isCoopMember, networkMatches } from "@/lib/qu
 import { OFFER_KINDS } from "@/db/schema";
 import { brl, dateBR } from "@/lib/format";
 import { formatDistance, proximity } from "@/lib/geo";
-import { ErrorBanner } from "@/components/ui";
+import { ErrorBanner, DemoTag } from "@/components/ui";
 import { comprar, demonstrarInteresse, fecharOferta } from "../../actions";
 
 /** Chave Pix trocada nos últimos 7 dias? (aviso para quem vai pagar) */
@@ -43,7 +43,7 @@ export default async function OfertaPage({ params, searchParams }: PageProps<"/m
           <span className="chip">{OFFER_KINDS[offer.kind]}</span>
           {offer.status === "fechada" && <span className="chip">encerrada</span>}
         </div>
-        <h1 className="h-display mt-2 text-3xl">{offer.title}</h1>
+        <h1 className="h-display mt-2 text-3xl">{offer.title}<DemoTag on={offer.demo} /></h1>
         <p className="mt-1 text-sm text-muted">
           {coopName ? (
             <Link href={`/cooperativas/${coopSlug}`} className="text-brand">🏠 {coopName}</Link>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DemoTag } from "@/components/ui";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
@@ -17,6 +18,7 @@ export default async function Pessoa({ params }: PageProps<"/pessoas/[id]">) {
       uf: schema.users.uf,
       geohash: schema.users.geohash,
       bio: schema.users.bio,
+      demo: schema.users.demo,
       skills: schema.users.skills,
     })
     .from(schema.users)
@@ -34,7 +36,7 @@ export default async function Pessoa({ params }: PageProps<"/pessoas/[id]">) {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="card">
-        <h1 className="h-display text-3xl">{person.name}</h1>
+        <h1 className="h-display text-3xl">{person.name}<DemoTag on={person.demo} /></h1>
         {person.city && <p className="text-muted">{[person.bairro, person.city].filter(Boolean).join(" · ")}</p>}
         {person.bio && <p className="mt-3 whitespace-pre-line">{person.bio}</p>}
         {person.skills && (

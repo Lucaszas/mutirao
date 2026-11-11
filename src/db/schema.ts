@@ -16,6 +16,8 @@ export const users = sqliteTable("users", {
   bio: text("bio").notNull().default(""),
   // Habilidades separadas por vírgula: "costura, marcenaria, contabilidade"
   skills: text("skills").notNull().default(""),
+  // Dado de exemplo (placeholder) — aparece com o selo "exemplo"
+  demo: integer("demo", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at").notNull().default(now),
 });
 
@@ -61,6 +63,8 @@ export const coops = sqliteTable("coops", {
   // Regras de distribuição das sobras (percentuais)
   reservePct: integer("reserve_pct").notNull().default(20), // fundo de reserva indivisível
   socialPct: integer("social_pct").notNull().default(10), // fundo social / expansão / intercooperação
+  // Dado de exemplo (placeholder) — aparece com o selo "exemplo"
+  demo: integer("demo", { mode: "boolean" }).notNull().default(false),
   createdBy: integer("created_by").notNull().references(() => users.id),
   createdAt: integer("created_at").notNull().default(now),
 });
@@ -99,6 +103,8 @@ export const offers = sqliteTable("offers", {
   // Pedido urgente (crise, saúde, alimento): aparece primeiro no bairro
   urgent: integer("urgent", { mode: "boolean" }).notNull().default(false),
   status: text("status").notNull().$type<"aberta" | "fechada">().default("aberta"),
+  // Dado de exemplo (placeholder) — aparece com o selo "exemplo"
+  demo: integer("demo", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at").notNull().default(now),
 });
 
@@ -225,7 +231,67 @@ export const votes = sqliteTable(
   (t) => [uniqueIndex("vote_unique").on(t.proposalId, t.userId)],
 );
 
+// Mural: ideias, problemas e sugestões de design. Aberto a qualquer pessoa da rede
+// (clientes, vizinhos, amigos), não só a membros. Membros cuidam do andamento.
+export const POST_KINDS = {
+  ideia: "💡 Ideia",
+  problema: "🐞 Problema",
+  design: "🎨 Design",
+  conversa: "💬 Conversa",
+} as const;
+export type PostKind = keyof typeof POST_KINDS;
+
+export const POST_STATUS = {
+  aberta: "Aberta",
+  em_andamento: "Em andamento",
+  feita: "Feita",
+  descartada: "Descartada",
+} as const;
+export type PostStatus = keyof typeof POST_STATUS;
+
+export const posts = sqliteTable(
+  "posts",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    coopId: integer("coop_id").notNull().references(() => coops.id, { onDelete: "cascade" }),
+    authorId: integer("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull().$type<PostKind>(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    // Página ou parte do site a que se refere (opcional), ex.: "/mercado" ou "tela de pedidos"
+    page: text("page").notNull().default(""),
+    status: text("status").notNull().$type<PostStatus>().default("aberta"),
+    statusNote: text("status_note").notNull().default(""),
+    createdAt: integer("created_at").notNull().default(now),
+  },
+  (t) => [index("posts_coop").on(t.coopId, t.createdAt)],
+);
+
+export const postComments = sqliteTable(
+  "post_comments",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    postId: integer("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+    authorId: integer("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: integer("created_at").notNull().default(now),
+  },
+  (t) => [index("comments_post").on(t.postId, t.id)],
+);
+
+// "Apoiar" uma ideia: 1 pessoa = 1 apoio. Ajuda a priorizar, não decide (quem decide é a assembleia).
+export const postSupports = sqliteTable(
+  "post_supports",
+  {
+    postId: integer("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at").notNull().default(now),
+  },
+  (t) => [uniqueIndex("support_unique").on(t.postId, t.userId)],
+);
+
 export type User = typeof users.$inferSelect;
+export type Post = typeof posts.$inferSelect;
 export type Coop = typeof coops.$inferSelect;
 export type Offer = typeof offers.$inferSelect;
 export type Proposal = typeof proposals.$inferSelect;

@@ -316,7 +316,7 @@ export async function listMyOrders(userId: number) {
 
 export async function getOrder(id: number) {
   return db
-    .select({ order: orders, offerTitle: offers.title, coopName: coops.name, coopSlug: coops.slug, coopCity: coops.city, buyer: users.name })
+    .select({ order: orders, offerTitle: offers.title, coopName: coops.name, coopSlug: coops.slug, coopCity: coops.city, coopDemo: coops.demo, buyer: users.name })
     .from(orders)
     .innerJoin(offers, eq(offers.id, orders.offerId))
     .innerJoin(users, eq(users.id, orders.buyerId))
@@ -345,7 +345,7 @@ export async function neighborhood(place: Place, viewerId?: number) {
       .sort((a, b) => rank[a.near.level] - rank[b.near.level] || (a.near.km ?? 99) - (b.near.km ?? 99));
   }
   const [people, coopRows, offerRows] = await Promise.all([
-    db.select({ id: users.id, name: users.name, city: users.city, bairro: users.bairro, geohash: users.geohash, skills: users.skills }).from(users),
+    db.select({ id: users.id, name: users.name, city: users.city, bairro: users.bairro, geohash: users.geohash, skills: users.skills, demo: users.demo }).from(users),
     listCoops(),
     listOffers(),
   ]);
@@ -355,5 +355,77 @@ export async function neighborhood(place: Place, viewerId?: number) {
     offers: near(offerRows.map((o) => ({ ...o, city: o.offer.city, bairro: o.offer.bairro, geohash: o.offer.geohash }))).sort(
       (a, b) => Number(b.offer.urgent) - Number(a.offer.urgent),
     ),
+  };
+}
+
+// ---------- Mural (ideias, problemas, design) ----------
+
+export type MuralSort = "apoios" | "recentes";
+
+export async function listPosts(
+  coopId: number,
+  opts: { kind?: string; status?: string; sort?: MuralSort; viewerId?: number; limit?: number } = {},
+) {
+  const { posts } = schema;
+  const supports = sql<number>`(select count(*) from post_supports s where s.post_id = "posts"."id")`;
+  const rows = await db
+    .select({
+      post: posts,
+      author: users.name,
+      supports,
+      comments: sql<number>`(select count(*) from post_comments c where c.post_id = "posts"."id")`,
+      mine: opts.viewerId
+        ? sql<number>`exists(select 1 from post_supports s where s.post_id = "posts"."id" and s.user_id = ${opts.viewerId})`
+        : sql<number>`0`,
+    })
+    .from(posts)
+    .innerJoin(users, eq(users.id, posts.authorId))
+    .where(
+      and(
+        eq(posts.coopId, coopId),
+        opts.kind && opts.kind in schema.POST_KINDS ? eq(posts.kind, opts.kind as schema.PostKind) : undefined,
+        opts.status && opts.status in schema.POST_STATUS
+          ? eq(posts.status, opts.status as schema.PostStatus)
+          : inArray(posts.status, ["aberta", "em_andamento"]),
+      ),
+    )
+    .orderBy(...(opts.sort === "recentes" ? [desc(posts.createdAt)] : [desc(supports), desc(posts.createdAt)]))
+    .limit(opts.limit ?? 200);
+  return rows.map((r) => ({ ...r, supports: Number(r.supports), comments: Number(r.comments), mine: !!Number(r.mine) }));
+}
+
+export async function getPost(id: number, viewerId?: number) {
+  const { posts, postComments, postSupports } = schema;
+  const row = await db
+    .select({ post: posts, author: users.name, coop: coops })
+    .from(posts)
+    .innerJoin(users, eq(users.id, posts.authorId))
+    .innerJoin(coops, eq(coops.id, posts.coopId))
+    .where(eq(posts.id, id))
+    .get();
+  if (!row) return null;
+  const [comments, supporters, member] = await Promise.all([
+    db
+      .select({ comment: postComments, author: users.name })
+      .from(postComments)
+      .innerJoin(users, eq(users.id, postComments.authorId))
+      .where(eq(postComments.postId, id))
+      .orderBy(asc(postComments.id)),
+    db
+      .select({ userId: users.id, name: users.name })
+      .from(postSupports)
+      .innerJoin(users, eq(users.id, postSupports.userId))
+      .where(eq(postSupports.postId, id)),
+    viewerId ? isCoopMember(row.coop.id, viewerId) : Promise.resolve(false),
+  ]);
+  const memberIds = new Set(
+    (await db.select({ userId: memberships.userId }).from(memberships).where(eq(memberships.coopId, row.coop.id))).map((m) => m.userId),
+  );
+  return {
+    ...row,
+    comments: comments.map((c) => ({ ...c, isMember: memberIds.has(c.comment.authorId) })),
+    supporters,
+    mine: !!viewerId && supporters.some((s) => s.userId === viewerId),
+    isMember: member,
   };
 }
